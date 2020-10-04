@@ -28,9 +28,9 @@ int main(void)
 {
     //fs = rt_malloc(sizeof(FATFS));
    /* res_flash = f_mount(&fs, "1:", 1);
-    rt_kprintf("¼´½«¸ñÊ½»¯%d\r\n", res_flash);
+    rt_kprintf("res_flash¿¿¿%d\r\n", res_flash);
      if (res_flash == FR_NO_FILESYSTEM){
-        rt_kprintf("¼´½«¸ñÊ½»¯%d\r\n", res_flash);
+        rt_kprintf("¿¿¿¿¿¿¿%d\r\n", res_flash);
         res_flash = f_mkfs("1:", 0, 0);
         if (res_flash == FR_OK){
             rt_kprintf("³É¹¦¸ñÊ½»¯ÎÄ¼þÏµÍ³\r\n");
