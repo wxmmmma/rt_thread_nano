@@ -19,7 +19,7 @@ int main(void)
     while(1)
     {
         rt_thread_mdelay(1000);
-        rt_kprintf("ä½ å¥½");
+        rt_kprintf("ÄãºÃ");
     }
     return RT_EOK;
 }
