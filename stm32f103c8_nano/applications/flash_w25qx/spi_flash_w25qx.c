@@ -20,7 +20,7 @@
 #include <board.h>
 #include <string.h>
 #include "spi_flash_w25qx.h"
-#include "uart_config.h"
+
 union w25qx_addr{
     uint32_t addr;
     struct addr_k_t{
