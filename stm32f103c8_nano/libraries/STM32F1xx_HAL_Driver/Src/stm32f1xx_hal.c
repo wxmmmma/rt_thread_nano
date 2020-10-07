@@ -202,9 +202,6 @@ __weak void HAL_MspInit(void)
   /* NOTE : This function should not be modified, when the callback is needed,
             the HAL_MspInit could be implemented in the user file
    */
-    __HAL_RCC_AFIO_CLK_ENABLE();
-    __HAL_RCC_PWR_CLK_ENABLE();
-    __HAL_AFIO_REMAP_SWJ_NONJTRST();
 }
 
 /**

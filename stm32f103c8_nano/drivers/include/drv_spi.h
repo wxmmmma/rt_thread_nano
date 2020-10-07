@@ -56,8 +56,8 @@ do{                                                                  \
 }while(0)                                                            \
 
 
-//空闲时SCL为低电平，第一个跳变沿采集数据
-//CLKPolarity = LOW or HIGH  CLKPhase = 1 or 2
+//
+//
 #define SPI_MODE(RT_HW_SPI, CLKPola, CLKPha, BaudR)                        \
 {                                                                          \
     RT_HW_SPI->SPIx.Init.CLKPolarity       = SPI_POLARITY_##CLKPola;       \
@@ -70,7 +70,7 @@ do{                                                                  \
 struct rt_hw_spi{
     uint32_t              cs_pin_name;
     GPIO_TypeDef          *gpio_cs;
-    SPI_HandleTypeDef     SPIx;                               //SPI名称
+    SPI_HandleTypeDef     SPIx;                               //
 
 };
 

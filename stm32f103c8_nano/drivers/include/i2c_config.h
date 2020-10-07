@@ -16,7 +16,7 @@
 
 
 struct rt_hw_i2c{
-    uint8_t               slave_addr;                    //元件地址
+    uint8_t               slave_addr;                    //
     GPIO_TypeDef          *scl_gpio;                     //SCL GPIOX
     uint32_t              scl_pin_name;                  //SCL PINX
     GPIO_TypeDef          *sda_gpio;                     //SDA GPIOX
@@ -34,16 +34,16 @@ struct rt_hw_i2c my_i2c[] = {
 };
 
 /*
- * i2c发送数据函数
- * reg 要写寄存器地址  data要发送的数据  len数据长度
- * 返回值0成功 1失败
+ *
+ *
+ *
  */
 uint8_t IIC_Send_Data(struct rt_hw_i2c *i2cx, uint8_t reg, uint8_t *data, int len);
 
 /*
- * i2c读取数据函数
- * reg 要读寄存器地址  data要读的数据  len数据长度
- * 返回值0成功 1失败
+ *
+ *
+ *
  */
 uint8_t IIC_Read_Data(struct rt_hw_i2c *i2cx, uint8_t reg, uint8_t *data, int len);
 

@@ -25,7 +25,7 @@ static void SPI_CSS_ENABLE(struct rt_hw_spi *my_spi)
 }
 
 
-//向指定地址读取不定长数据   返回值为状态
+//
 uint8_t rt_spi_send_then_recv(struct rt_hw_spi *rt_hw_spi, uint8_t *data1, uint16_t len1, uint8_t *data2, uint16_t len2)
 {
   uint8_t d_read;
@@ -50,7 +50,7 @@ uint8_t rt_spi_send(struct rt_hw_spi *rt_hw_spi, uint8_t *data, uint16_t len)
 
 
 
-//向指定地址发送不定长数据   返回值为状态
+//
 uint8_t rt_spi_send_then_send(struct rt_hw_spi *rt_hw_spi, uint8_t *data1, uint16_t len1, uint8_t *data2, uint16_t len2)
 {
     uint8_t sta;

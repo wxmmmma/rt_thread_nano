@@ -11,7 +11,7 @@
 
 #include "stdlib.h"
 #include "drv_common.h"
-#include "uart_config.h"
+#include "drv_usart.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -25,39 +25,17 @@
 
 #include <rtdbg.h>
 
-#ifdef RT_USING_CONSOLE
-
-
-
-
-//============================================================
-#ifdef BSP_USING_UART1
-struct rt_hw_uart   my_uart1;
-#endif
-
-#ifdef BSP_USING_UART2
-struct rt_hw_uart   my_uart2;
-#endif
-
-#ifdef BSP_USING_UART3
-struct rt_hw_uart   my_uart3;
-#endif
-
-struct rt_semaphore rx_sem;                    //串口返回数据信号量，记录返回命令个数
-UsartCallBack       CallBack1, CallBack2, CallBack3;
-usart_list          *uart_list_head;            //串口接收返回返回数据的双向链表的头节点
-
 
 //==============================================================================
-//创建头链表
+/*
 rt_inline usart_list *HN_List_Create(void)
 {
     usart_list *node = (usart_list*)rt_malloc(sizeof(usart_list));
     node->next = node->prev = node;
     return node;
 }
-//向双链表表头后面插入一个节点
-//l为表头 n为插入节点
+//
+//
 rt_inline usart_list *list_inster_after(usart_list *l, uint16_t data_len, uint8_t *buf)
 {
     usart_list *n = (usart_list*)rt_malloc(sizeof(usart_list));;
@@ -69,8 +47,8 @@ rt_inline usart_list *list_inster_after(usart_list *l, uint16_t data_len, uint8_
     l->next = n;
     return n;
 }
-//向双链表表头前面插入一个节点
-//l为表头 n为插入节点
+//
+//
 rt_inline usart_list *list_inster_before(usart_list *l, uint16_t data_len, uint8_t *buf, USART_TypeDef *Instance)
 {
     usart_list *n;
@@ -86,7 +64,7 @@ rt_inline usart_list *list_inster_before(usart_list *l, uint16_t data_len, uint8
     return n;
 }
 
-//删除节点
+//
 rt_inline void list_delete_note(usart_list *n)
 {
 
@@ -97,166 +75,77 @@ rt_inline void list_delete_note(usart_list *n)
     rt_free(p->data);
     rt_free(p);
 }
-
+*/
 
 //=====================================================================
 
 
 
-void my_hw_usart_init(void)
+
+//UART_HandleTypeDef          handle;
+struct rt_hw_uart my_uart1 = {"uart1", 1, 115200};
+//DMA_HandleTypeDef hdma_usart_rx;
+void USART_INIT(struct rt_hw_uart *rt_hw_uart)
 {
-    __HAL_RCC_DMA1_CLK_ENABLE();
-#ifdef BSP_USING_UART1
+
+    //__HAL_RCC_DMA1_CLK_ENABLE();
     __HAL_RCC_USART1_CLK_ENABLE();
-    __HAL_RCC_GPIOA_CLK_ENABLE();
-//    HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 1, 0);
-//    HAL_NVIC_EnableIRQ(DMA1_Channel4_IRQn);
-    HAL_NVIC_SetPriority(DMA1_Channel5_IRQn, 2, 0);
-    HAL_NVIC_EnableIRQ(DMA1_Channel5_IRQn);
-#endif
-#ifdef BSP_USING_UART2
-    __HAL_RCC_USART2_CLK_ENABLE();
-    __HAL_RCC_GPIOA_CLK_ENABLE();
-    HAL_NVIC_SetPriority(DMA1_Channel6_IRQn, 3, 0);
-    HAL_NVIC_EnableIRQ(DMA1_Channel6_IRQn);
-//    HAL_NVIC_SetPriority(DMA1_Channel7_IRQn, 4, 0);
-//    HAL_NVIC_EnableIRQ(DMA1_Channel7_IRQn);
-#endif
-#ifdef BSP_USING_UART3
-    __HAL_RCC_USART3_CLK_ENABLE();
-    __HAL_RCC_GPIOB_CLK_ENABLE();
-//    HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 1, 0);
-//    HAL_NVIC_EnableIRQ(DMA1_Channel2_IRQn);
-    HAL_NVIC_SetPriority(DMA1_Channel3_IRQn, 2, 0);
-    HAL_NVIC_EnableIRQ(DMA1_Channel3_IRQn);
-#endif
-}
-
-void MY_UART_GPIIO_DMA_INIT(struct rt_hw_uart *my_uart)
-{
-    GPIO_InitTypeDef GPIO_InitStruct = {0};
-
-    GPIO_InitStruct.Pin   = my_uart->conset.tx_pin_name;
-    GPIO_InitStruct.Mode  = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-    HAL_GPIO_Init(my_uart->conset.GPIOx, &GPIO_InitStruct);
-
-    GPIO_InitStruct.Pin   = my_uart->conset.rx_pin_name;
-    GPIO_InitStruct.Mode  = GPIO_MODE_INPUT;
-    GPIO_InitStruct.Pull  = GPIO_NOPULL;
-    HAL_GPIO_Init(my_uart->conset.GPIOx, &GPIO_InitStruct);
 /*
-    my_uart->hdma_usart_tx.Instance                 = my_uart->conset.DMA_TX_Channel;
-    my_uart->hdma_usart_tx.Init.Direction           = DMA_MEMORY_TO_PERIPH;
-    my_uart->hdma_usart_tx.Init.PeriphInc           = DMA_PINC_DISABLE;
-    my_uart->hdma_usart_tx.Init.MemInc              = DMA_MINC_ENABLE;
-    my_uart->hdma_usart_tx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
-    my_uart->hdma_usart_tx.Init.MemDataAlignment    = DMA_MDATAALIGN_BYTE;
-    my_uart->hdma_usart_tx.Init.Mode                = DMA_NORMAL;
-    my_uart->hdma_usart_tx.Init.Priority            = DMA_PRIORITY_LOW;
-    if (HAL_DMA_Init(&my_uart->hdma_usart_tx) != HAL_OK)
+    hdma_usart_rx.Instance                 = DMA1_Channel5;
+    hdma_usart_rx.Init.Direction           = DMA_PERIPH_TO_MEMORY;
+    hdma_usart_rx.Init.PeriphInc           = DMA_PINC_DISABLE;
+    hdma_usart_rx.Init.MemInc              = DMA_MINC_ENABLE;
+    hdma_usart_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+    hdma_usart_rx.Init.MemDataAlignment    = DMA_MDATAALIGN_BYTE;
+    hdma_usart_rx.Init.Mode                = DMA_NORMAL;
+    hdma_usart_rx.Init.Priority            = DMA_PRIORITY_LOW;
+    if (HAL_DMA_Init(&hdma_usart_rx) != HAL_OK)
     {
         Error_Handler();
     }
-
-    __HAL_LINKDMA(&my_uart->handle, hdmatx, my_uart->hdma_usart_tx);
+    __HAL_LINKDMA(&rt_hw_uart.handle, hdmarx, hdma_usart_rx);
 */
-    my_uart->hdma_usart_rx.Instance                 = my_uart->conset.DMA_RX_Channel;
-    my_uart->hdma_usart_rx.Init.Direction           = DMA_PERIPH_TO_MEMORY;
-    my_uart->hdma_usart_rx.Init.PeriphInc           = DMA_PINC_DISABLE;
-    my_uart->hdma_usart_rx.Init.MemInc              = DMA_MINC_ENABLE;
-    my_uart->hdma_usart_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
-    my_uart->hdma_usart_rx.Init.MemDataAlignment    = DMA_MDATAALIGN_BYTE;
-    my_uart->hdma_usart_rx.Init.Mode                = DMA_NORMAL;
-    my_uart->hdma_usart_rx.Init.Priority            = DMA_PRIORITY_LOW;
-    if (HAL_DMA_Init(&my_uart->hdma_usart_rx) != HAL_OK)
+    rt_hw_uart->handle.Instance          = USART1;
+    rt_hw_uart->handle.Init.BaudRate     = 115200;
+    rt_hw_uart->handle.Init.HwFlowCtl    = UART_HWCONTROL_NONE;
+    rt_hw_uart->handle.Init.Mode         = UART_MODE_TX_RX;
+    rt_hw_uart->handle.Init.OverSampling = UART_OVERSAMPLING_16;
+    rt_hw_uart->handle.Init.WordLength   = UART_WORDLENGTH_8B;
+    rt_hw_uart->handle.Init.StopBits     = UART_STOPBITS_1;
+    rt_hw_uart->handle.Init.Parity       = UART_PARITY_NONE;
+
+    if (HAL_UART_Init(&rt_hw_uart->handle) != HAL_OK)
     {
         Error_Handler();
     }
 
-    __HAL_LINKDMA(&my_uart->handle, hdmarx, my_uart->hdma_usart_rx);
-    HAL_NVIC_SetPriority(my_uart->conset.IRQn_Type, my_uart->conset.PreemptPriority, 0);
-    HAL_NVIC_EnableIRQ(my_uart->conset.IRQn_Type);
-    __HAL_UART_ENABLE_IT(&my_uart->handle, UART_IT_IDLE);
+    HAL_NVIC_SetPriority(USART1_IRQn, 1, 0);
+    HAL_NVIC_EnableIRQ(USART1_IRQn);
+    //HAL_NVIC_SetPriority(DMA1_Channel5_IRQn, 2, 0);
+    //HAL_NVIC_EnableIRQ(DMA1_Channel5_IRQn);
+    __HAL_UART_ENABLE_IT(&rt_hw_uart->handle, UART_IT_IDLE);
 
-}
-
-void HAL_UART_MspInit(UART_HandleTypeDef *huart)
-{
-
-    if(huart->Instance == USART1){
-    #ifdef BSP_USING_UART1
-        MY_UART_GPIIO_DMA_INIT(&my_uart1);
-    #endif
-    }
-    else if(huart->Instance == USART2){
-    #ifdef BSP_USING_UART2
-        MY_UART_GPIIO_DMA_INIT(&my_uart2);
-    #endif
-    }
-    else if(huart->Instance == USART3){
-    #ifdef BSP_USING_UART3
-        MY_UART_GPIIO_DMA_INIT(&my_uart3);
-    #endif
-    }
-
-}
-
-__weak void my_uart_ops(struct rt_hw_uart *my_uart)
-{
-    my_uart->handle.Instance          = my_uart->conset.Instance;
-    my_uart->handle.Init.BaudRate     = 115200;
-    my_uart->handle.Init.HwFlowCtl    = UART_HWCONTROL_NONE;
-    my_uart->handle.Init.Mode         = UART_MODE_TX_RX;
-    my_uart->handle.Init.OverSampling = UART_OVERSAMPLING_16;
-    my_uart->handle.Init.WordLength   = UART_WORDLENGTH_8B;
-    my_uart->handle.Init.StopBits     = UART_STOPBITS_1;
-    my_uart->handle.Init.Parity       = UART_PARITY_NONE;
-}
-
-static rt_err_t stm32_configure(struct rt_hw_uart *my_uart)
-{
-
-    my_uart_ops(my_uart);
-    if (HAL_UART_Init(&my_uart->handle) != HAL_OK)
-    {
-        return -RT_ERROR;
-    }
-    return RT_EOK;
 }
 
 
 int rt_hw_usart_init(void)
 {
-    uart_list_head = HN_List_Create();
-    my_hw_usart_init();
-    #ifdef BSP_USING_UART1
-    my_uart1.conset = (struct rt_hw_uart_conset)UART1_CONFIG;
-    stm32_configure(&my_uart1);
-    my_uart1.rx_buffer = (uint8_t*)rt_malloc(my_uart1.conset.dma_data_len *sizeof(char));
-    HAL_UART_Receive_DMA(&my_uart1.handle, my_uart1.rx_buffer, my_uart1.conset.dma_data_len);
-    #endif
-    #ifdef BSP_USING_UART2
-    my_uart2.conset = (struct rt_hw_uart_conset)UART2_CONFIG;
-    stm32_configure(&my_uart2);
-    my_uart2.rx_buffer = (uint8_t*)rt_malloc(my_uart2.conset.dma_data_len *sizeof(char));
-    HAL_UART_Receive_DMA(&my_uart2.handle, my_uart2.rx_buffer, my_uart2.conset.dma_data_len);
-    #endif
-    #ifdef BSP_USING_UART3
-    my_uart3.conset = (struct rt_hw_uart_conset)UART3_CONFIG;
-    stm32_configure(&my_uart3);
-    my_uart3.rx_buffer = (uint8_t*)rt_malloc(my_uart3.conset.dma_data_len *sizeof(char));
-    HAL_UART_Receive_DMA(&my_uart3.handle, my_uart3.rx_buffer, my_uart3.conset.dma_data_len);
-    #endif
-    return RT_EOK;
+    __USART_GPIO_INIT(A, 9, A, 10);
+    USART_INIT(&my_uart1);
+    return 0;
 }
 INIT_BOARD_EXPORT(rt_hw_usart_init);
+
+void UART1_SEND_DATA(uint8_t *Data, uint16_t Len, uint32_t Timeout)
+{
+    HAL_UART_Transmit(&my_uart1.handle, Data, Len, Timeout);
+}
 
 void rt_hw_uart_register(UART_HandleTypeDef handle, char *name)
 {
 
 }
-
+/*
 #ifdef BSP_USING_UART1
 void USART1_IRQHandler(void)
 {
@@ -280,19 +169,7 @@ void UART1_SEND_DATA(uint8_t *Data, uint16_t Len, uint32_t Timeout)
 }
 
 
-/*
-void u1_printf(const char* fmt,...)
-{
-    char USART3_TX_BUF[128];
-    rt_size_t i;
-    va_list ap;
-    va_start(ap, fmt);
-    my_vsprintf((char*)USART3_TX_BUF, fmt, ap);
-    i = strlen((const char*)USART3_TX_BUF);
-    HAL_UART_Transmit(&my_uart1.handle, (uint8_t *)USART3_TX_BUF, i, 0xff);
-    va_end(ap);
-}
-*/
+
 
 void rt_hw_console_output(const char *str)
 {
@@ -405,6 +282,6 @@ static int uart3_init(void)
 
 
 INIT_DEVICE_EXPORT(uart3_init);
+*/
 
-#endif /* RT_USING_CONSLONE */
 

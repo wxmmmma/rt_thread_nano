@@ -10,171 +10,151 @@
 /* storage control modules to the FatFs module with a defined API.       */
 /*-----------------------------------------------------------------------*/
 
-/**
-  ******************************************************************************
-  * @file    diskio.c 
-  * @author  MCD Application Team
-  * @version V1.4.1
-  * @date    14-February-2017
-  * @brief   FatFs low level disk I/O module.
-  ******************************************************************************
-  * @attention
-  *
-  *
-  * Redistribution and use in source and binary forms, with or without 
-  * modification, are permitted, provided that the following conditions are met:
-  *
-  * 1. Redistribution of source code must retain the above copyright notice, 
-  *    this list of conditions and the following disclaimer.
-  * 2. Redistributions in binary form must reproduce the above copyright notice,
-  *    this list of conditions and the following disclaimer in the documentation
-  *    and/or other materials provided with the distribution.
-  * 3. Neither the name of STMicroelectronics nor the names of other 
-  *    contributors to this software may be used to endorse or promote products 
-  *    derived from this software without specific written permission.
-  * 4. This software, including modifications and/or derivative works of this 
-  *    software, must execute solely and exclusively on microcontroller or
-  *    microprocessor devices manufactured by or for STMicroelectronics.
-  * 5. Redistribution and use of this software other than as permitted under 
-  *    this license is void and will automatically terminate your rights under 
-  *    this license. 
-  *
-  * THIS SOFTWARE IS PROVIDED BY STMICROELECTRONICS AND CONTRIBUTORS "AS IS" 
-  * AND ANY EXPRESS, IMPLIED OR STATUTORY WARRANTIES, INCLUDING, BUT NOT 
-  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
-  * PARTICULAR PURPOSE AND NON-INFRINGEMENT OF THIRD PARTY INTELLECTUAL PROPERTY
-  * RIGHTS ARE DISCLAIMED TO THE FULLEST EXTENT PERMITTED BY LAW. IN NO EVENT 
-  * SHALL STMICROELECTRONICS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-  * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, 
-  * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
-  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING 
-  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-  *
-  ******************************************************************************
-  */
 
-/* Includes ------------------------------------------------------------------*/
 #include "diskio.h"
 #include "ff_gen_drv.h"
+#include "spi_flash_w25qx.h"
 
-/* Private typedef -----------------------------------------------------------*/
-/* Private define ------------------------------------------------------------*/
-/* Private variables ---------------------------------------------------------*/
+#define ATA 0                                          // 预留 SD 卡使用
+#define SPI_FLASH 1                                    // 外部 SPI Flash
+
 extern Disk_drvTypeDef  disk;
 
-/* Private function prototypes -----------------------------------------------*/
-/* Private functions ---------------------------------------------------------*/
 
-/**
-  * @brief  Gets Disk Status 
-  * @param  pdrv: Physical drive number (0..)
-  * @retval DSTATUS: Operation status
-  */
-DSTATUS disk_status (
-	BYTE pdrv		/* Physical drive nmuber to identify the drive */
-)
+
+//pdrv ATA sd卡        SPI_FLASH flash   返回值0确定id成功  1失败
+DSTATUS disk_status (BYTE pdrv)
 {
-  DSTATUS stat;
-  
-  stat = disk.drv[pdrv]->disk_status(disk.lun[pdrv]);
-  return stat;
+    DSTATUS status = STA_NOINIT;
+    switch (pdrv) {
+        case ATA:
+            break;
+        case SPI_FLASH:
+            if (0x14 == SPI_FLASH_ReadID(&w25q256))status &= ~STA_NOINIT; //设备初始化成功
+            else status = STA_NOINIT;;                            //设备初始化失败
+            break;
+        default:
+            status = STA_NOINIT;
+            break;
+    }
+    return status;
 }
 
-/**
-  * @brief  Initializes a Drive
-  * @param  pdrv: Physical drive number (0..)
-  * @retval DSTATUS: Operation status
-  */
-DSTATUS disk_initialize (
-	BYTE pdrv				/* Physical drive nmuber to identify the drive */
-)
+
+DSTATUS disk_initialize (BYTE pdrv)
 {
-  DSTATUS stat = RES_OK;
-  
-  if(disk.is_initialized[pdrv] == 0)
-  { 
-    disk.is_initialized[pdrv] = 1;
-    stat = disk.drv[pdrv]->disk_initialize(disk.lun[pdrv]);
-  }
-  return stat;
+    DSTATUS status = STA_NOINIT;
+    uint16_t i;
+    switch (pdrv) {
+        case ATA:
+            break;
+        case SPI_FLASH:
+            SPI_FLASH_Init(&w25q256.w25qx_sample);
+            i = 500;
+            while (--i);
+            SPI_Flash_WAKEUP();
+            status = disk_status(SPI_FLASH);
+            break;
+        default:
+                status = STA_NOINIT;
+                break;
+    }
+    return status;
 }
 
-/**
-  * @brief  Reads Sector(s) 
-  * @param  pdrv: Physical drive number (0..)
-  * @param  *buff: Data buffer to store read data
-  * @param  sector: Sector address (LBA)
-  * @param  count: Number of sectors to read (1..128)
-  * @retval DRESULT: Operation result
-  */
-DRESULT disk_read (
-	BYTE pdrv,		/* Physical drive nmuber to identify the drive */
-	BYTE *buff,		/* Data buffer to store read data */
-	DWORD sector,	        /* Sector address in LBA */
-	UINT count		/* Number of sectors to read */
-)
+//pdrv 设备   buff 数据   sector 地址  count 扇区数
+DRESULT disk_read (BYTE pdrv, BYTE *buff, DWORD sector,	UINT count)
 {
-  DRESULT res;
- 
-  res = disk.drv[pdrv]->disk_read(disk.lun[pdrv], buff, sector, count);
-  return res;
+    DRESULT status = RES_PARERR;
+    switch (pdrv) {
+        case ATA:
+            break;
+        case SPI_FLASH:
+            W25QXX_Read(buff, (sector + 128) * 4096, count * 4096);
+            status = RES_OK;
+            break;
+        default:
+            status = RES_PARERR;
+            break;
+    }
+    return status;
 }
 
-/**
-  * @brief  Writes Sector(s)  
-  * @param  pdrv: Physical drive number (0..)
-  * @param  *buff: Data to be written
-  * @param  sector: Sector address (LBA)
-  * @param  count: Number of sectors to write (1..128)
-  * @retval DRESULT: Operation result
-  */
+
 #if _USE_WRITE == 1
-DRESULT disk_write (
-	BYTE pdrv,		/* Physical drive nmuber to identify the drive */
-	const BYTE *buff,	/* Data to be written */
-	DWORD sector,		/* Sector address in LBA */
-	UINT count        	/* Number of sectors to write */
-)
-{
-  DRESULT res;
-  
-  res = disk.drv[pdrv]->disk_write(disk.lun[pdrv], buff, sector, count);
-  return res;
-}
-#endif /* _USE_WRITE == 1 */
 
-/**
-  * @brief  I/O control operation  
-  * @param  pdrv: Physical drive number (0..)
-  * @param  cmd: Control code
-  * @param  *buff: Buffer to send/receive control data
-  * @retval DRESULT: Operation result
-  */
+//pdrv 设备   buff 数据   sector 地址  count 扇区数
+DRESULT disk_write (BYTE pdrv, const BYTE *buff, DWORD sector, UINT count)
+{
+    DRESULT status = RES_PARERR;
+    DWORD write_addr = sector + 128;
+    if (!count) {
+        return RES_PARERR;
+    }
+    switch (pdrv) {
+        case ATA:
+            break;
+        case SPI_FLASH:
+            W25QXX_Write((uint8_t *)buff, write_addr * 4096, count * 4096);
+            status = RES_OK;
+            break;
+        default:
+            status = RES_PARERR;
+            break;
+    }
+    return status;
+}
+#endif
+
+
 #if _USE_IOCTL == 1
-DRESULT disk_ioctl (
-	BYTE pdrv,		/* Physical drive nmuber (0..) */
-	BYTE cmd,		/* Control code */
-	void *buff		/* Buffer to send/receive control data */
-)
+
+
+DRESULT disk_ioctl (BYTE pdrv, BYTE cmd, void *buff)
 {
-  DRESULT res;
-
-  res = disk.drv[pdrv]->disk_ioctl(disk.lun[pdrv], cmd, buff);
-  return res;
+    DRESULT status = RES_PARERR;
+    switch (pdrv) {
+    case ATA:
+        status = RES_OK;
+        break;
+    case SPI_FLASH:
+        switch (cmd) {
+            case CTRL_SYNC :
+                status = RES_OK;
+                break;
+            case GET_SECTOR_COUNT:            //扇区数
+                *(DWORD *)buff = 400;
+                break;
+            case GET_SECTOR_SIZE:             //扇区大小
+                *(WORD *)buff = 4096;
+                break;
+            case GET_BLOCK_SIZE:              //扇区单位
+                *(DWORD *)buff = 1;
+                break;
+            default:
+                status = RES_OK;
+                break;
+            }
+        status = RES_OK;
+        break;
+    default:
+        status = RES_PARERR;
+        break;
+    }
+    return status;
 }
-#endif /* _USE_IOCTL == 1 */
+#endif
 
-/**
-  * @brief  Gets Time from RTC 
-  * @param  None
-  * @retval Time in DWORD
-  */
+
 __weak DWORD get_fattime (void)
 {
-  return 0;
+    return ((DWORD)(2015 - 1980) << 25)
+            | ((DWORD)1 << 21)
+            | ((DWORD)1 << 16)
+            | ((DWORD)0 << 11)
+            | ((DWORD)0 << 5)
+            | ((DWORD)0 >> 1);
 }
 
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
+
 

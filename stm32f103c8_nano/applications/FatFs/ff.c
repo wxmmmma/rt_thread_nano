@@ -819,6 +819,7 @@ FRESULT move_window (
 			fs->winsect = sector;
 		}
 	}
+
 	return res;
 }
 
@@ -2325,7 +2326,9 @@ FRESULT find_volume (	/* FR_OK(0): successful, !=0: any error occurred */
 #endif
 	/* Find an FAT partition on the drive. Supports only generic partitioning, FDISK and SFD. */
 	bsect = 0;
+
 	fmt = check_fs(fs, bsect);					/* Load sector 0 and check if it is an FAT boot sector as SFD */
+
 	if (fmt == 1 || (!fmt && (LD2PT(vol)))) {	/* Not an FAT boot sector or forced partition number */
 		for (i = 0; i < 4; i++) {			/* Get partition offset */
 			pt = fs->win.d8 + MBR_Table + i * SZ_PTE;
@@ -2338,9 +2341,9 @@ FRESULT find_volume (	/* FR_OK(0): successful, !=0: any error occurred */
 			fmt = bsect ? check_fs(fs, bsect) : 2;	/* Check the partition */
 		} while (!LD2PT(vol) && fmt && ++i < 4);
 	}
+
 	if (fmt == 3) return FR_DISK_ERR;		/* An error occured in the disk I/O layer */
 	if (fmt) return FR_NO_FILESYSTEM;		/* No FAT volume is found */
-
 	/* An FAT volume is found. Following code initializes the file system object */
 
 	if (LD_WORD(fs->win.d8 + BPB_BytsPerSec) != SS(fs))	/* (BPB_BytsPerSec must be equal to the physical sector size) */
@@ -4252,15 +4255,18 @@ FRESULT f_mkfs (
 
 	if (_MULTI_PARTITION && part) {
 		/* Update system ID in the partition table */
+
 		tbl = &fs->win.d8[MBR_Table + (part - 1) * SZ_PTE];
 		tbl[4] = sys;
 		if (disk_write(pdrv, fs->win.d8, 0, 1) != RES_OK)	/* Write it to teh MBR */
 			return FR_DISK_ERR;
 		md = 0xF8;
 	} else {
+
 		if (sfd) {	/* No partition table (SFD) */
 			md = 0xF0;
 		} else {	/* Create partition table (FDISK) */
+
 			mem_set(fs->win.d8, 0, SS(fs));
 			tbl = fs->win.d8 + MBR_Table;	/* Create partition table for single partition in the drive */
 			tbl[1] = 1;						/* Partition start head */
@@ -4271,12 +4277,16 @@ FRESULT f_mkfs (
 			n = (b_vol + n_vol) / 63 / 255;
 			tbl[6] = (BYTE)(n >> 2 | 63);	/* Partition end sector */
 			tbl[7] = (BYTE)n;				/* End cylinder */
+
 			ST_DWORD(tbl + 8, 63);			/* Partition start in LBA */
 			ST_DWORD(tbl + 12, n_vol);		/* Partition size in LBA */
+
 			ST_WORD(fs->win.d8 + BS_55AA, 0xAA55);	/* MBR signature */
+
 			if (disk_write(pdrv, fs->win.d8, 0, 1) != RES_OK)	/* Write it to the MBR */
 				return FR_DISK_ERR;
 			md = 0xF8;
+
 		}
 	}
 
@@ -4747,6 +4757,19 @@ int f_printf (
 		&& (UINT)pb.idx == nw) return pb.nchr;
 	return EOF;
 }
+
+#if _USE_LFN == 3
+void* ff_memalloc (UINT msize)
+{
+    return rt_malloc(msize);
+}
+
+void ff_memfree (void* mblock)
+{
+    rt_free(mblock);
+}
+
+#endif
 
 #endif /* !_FS_READONLY */
 #endif /* _USE_STRFUNC */

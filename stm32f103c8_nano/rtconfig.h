@@ -26,8 +26,6 @@
 #define RT_USING_SMALL_MEM
 #define RT_USING_HEAP
 /* end of Memory Management */
-#define RT_USING_CONSOLE
-#define RT_CONSOLEBUF_SIZE 256
 #define RT_VER_NUM 0x30104
 /* end of RT-Thread Kernel */
 #define ARCH_ARM

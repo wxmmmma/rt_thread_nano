@@ -12,14 +12,17 @@
 #define DBG_TAG "main"
 #define DBG_LVL DBG_LOG
 #include <rtdbg.h>
-#include "uart_config.h"
+#include "drv_usart.h"
 
 int main(void)
 {
+    //uint8_t a = 0x03;
+
     while(1)
     {
         rt_thread_mdelay(1000);
-        rt_kprintf("ÄãºÃ");
+        //UART1_SEND_DATA(&a, 1, 0xff);
+        //rt_kprintf("ÄãºÃ");
     }
     return RT_EOK;
 }

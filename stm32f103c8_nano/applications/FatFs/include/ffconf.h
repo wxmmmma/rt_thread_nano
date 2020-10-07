@@ -86,7 +86,7 @@
 / Locale and Namespace Configurations
 /---------------------------------------------------------------------------*/
 
-#define _CODE_PAGE        936 
+#define _CODE_PAGE        936
 /* This option specifies the OEM code page to be used on the target system.
 /  Incorrect setting of the code page can cause a file open failure.
 /
@@ -118,7 +118,7 @@
 /   1    - ASCII (No extended character. Valid for only non-LFN configuration.) */
 
 
-#define	_USE_LFN                1
+#define	_USE_LFN                2  /* 2 */
 #define _MAX_LFN     255  /* Maximum LFN length to handle (12 to 255) */
 /* The _USE_LFN option switches the LFN feature.
 /
@@ -166,7 +166,7 @@
 / Drive/Volume Configurations
 /---------------------------------------------------------------------------*/
 
-#define _VOLUMES    1
+#define _VOLUMES    2
 /* Number of volumes (logical drives) to be used. */
 
 
@@ -221,9 +221,9 @@
 /---------------------------------------------------------------------------*/
 
 #define _FS_NORTC	1
-#define _NORTC_MON	5
+#define _NORTC_MON	10
 #define _NORTC_MDAY	1
-#define _NORTC_YEAR	2015
+#define _NORTC_YEAR	2020
 /* The _FS_NORTC option switches timestamp feature. If the system does not have
 /  an RTC function or valid timestamp is not needed, set _FS_NORTC to 1 to disable
 /  the timestamp feature. All objects modified by FatFs will have a fixed timestamp
