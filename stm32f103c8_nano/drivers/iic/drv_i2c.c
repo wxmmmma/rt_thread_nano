@@ -10,7 +10,7 @@
 #include "drv_gpio.h"
 #include <board.h>
 #include <drv_common.h>
-#include "i2c_config.h"
+#include <drv_i2c.h>
 
 
 

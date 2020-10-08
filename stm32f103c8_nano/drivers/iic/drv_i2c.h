@@ -12,7 +12,7 @@
 
 #include "stm32f1xx_hal.h"
 
-#define BSP_USING_I2C_24L02
+//#define BSP_USING_I2C_24L02
 
 
 struct rt_hw_i2c{
